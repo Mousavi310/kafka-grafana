@@ -1,0 +1,48 @@
+version: '3.1'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper
+    network_mode: host
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+
+  kafka1:
+    image: confluentinc/cp-kafka
+    network_mode: host
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9991:9991"
+      - "7071:7071"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_BROKER_ID: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      JMX_PORT: 9991
+      KAFKA_OPTS: "-javaagent:/usr/local/bin/jmx_prometheus_javaagent-0.9.jar=7071:/etc/jmx-exporter/kafka-2_0_0.yml"
+    volumes:
+      - ./jmx-exporter/kafka-2_0_0.yml:/etc/jmx-exporter/kafka-2_0_0.yml
+      - ./jmx-exporter/jmx_prometheus_javaagent-0.9.jar:/usr/local/bin/jmx_prometheus_javaagent-0.9.jar
+
+  prometheus:
+    network_mode: host
+    ports:
+      - 9090:9090
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    network_mode: host
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+
+    
+
